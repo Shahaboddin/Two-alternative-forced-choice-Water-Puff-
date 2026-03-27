@@ -32,35 +32,41 @@ pos_idx = randperm(3,2);
 pos1    = all_button_locs(pos_idx(1),:);
 pos2    = all_button_locs(pos_idx(2),:);
 
-% 6) Reward images and levels
+% 6) Define stimuli
+% Water: fixed to water3 (3 pulses)
+water_name   = 'water3.png';
+water_pulses = 3;
 
-% ===== FULL SET (for later) =====
-% image_names   = {'Zero.png','water1.png','water2.png','water3.png'};
-% reward_pulses = [0          1           2           3];
+% "Other" objects: Zero / puff2 / puff3
+other_names  = {'Zero.png','puff2.png','puff3.png'};
+other_codes  = [0 2 3];   % 0=Zero, 2=puff2, 3=puff3 (for timing file)
+other_pulses = [0 0 0];   % all non-water (0 pulses)
 
-% ===== TRAINING PHASE: only Zero + water3 =====
-image_names   = {'Zero.png','water3.png'};   % currently used
-reward_pulses = [0         3];
+% Randomly pick which "other" object this trial
+o_idx        = randi(3);
+this_other   = other_names{o_idx};
+this_o_code  = other_codes(o_idx);
+this_o_puls  = other_pulses(o_idx);  % always 0
 
-% pick indices within the current set
-idx_zero  = 1;   % Zero.png
-idx_high  = 2;   % water3.png
-
-img_idx1 = idx_zero;
-img_idx2 = idx_high;
-
-% randomize which logical slot is zero vs water3
+% Now decide which logical image is #1 and #2 (as before),
+% but ensure one is water, one is "other".
 if rand < 0.5
-    % keep: pos1 = Zero, pos2 = water3
+    % img1 = water, img2 = other
+    img1_name   = water_name;
+    img2_name   = this_other;
+    img1_pulses = water_pulses;
+    img2_pulses = this_o_puls;
+    img1_type   = 1;   % 1 = water
+    img2_type   = 0;   % 0 = other (Zero/puff)
 else
-    % swap
-    tmp      = img_idx1; img_idx1 = img_idx2; img_idx2 = tmp;
+    % img1 = other, img2 = water
+    img1_name   = this_other;
+    img2_name   = water_name;
+    img1_pulses = this_o_puls;
+    img2_pulses = water_pulses;
+    img1_type   = 0;
+    img2_type   = 1;
 end
-
-img1_name   = image_names{img_idx1};
-img2_name   = image_names{img_idx2};
-img1_pulses = reward_pulses(img_idx1);
-img2_pulses = reward_pulses(img_idx2);
 
 % 7) Save for analysis
 TrialRecord.User.all_button_locs = all_button_locs;
@@ -68,10 +74,14 @@ TrialRecord.User.pos_idx_pair    = pos_idx;
 TrialRecord.User.pos1            = pos1;
 TrialRecord.User.pos2            = pos2;
 
-TrialRecord.User.img_idx1        = img_idx1;
-TrialRecord.User.img_idx2        = img_idx2;
+TrialRecord.User.img1_name       = img1_name;
+TrialRecord.User.img2_name       = img2_name;
 TrialRecord.User.img1_pulses     = img1_pulses;
 TrialRecord.User.img2_pulses     = img2_pulses;
+
+TrialRecord.User.img1_type       = img1_type;      % 1=water,0=other
+TrialRecord.User.img2_type       = img2_type;      % 1=water,0=other
+TrialRecord.User.other_code      = this_o_code;    % 0,2,3 for Zero/puff2/puff3
 
 % which image is higher / lower?
 if img1_pulses > img2_pulses
