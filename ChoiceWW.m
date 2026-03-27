@@ -25,7 +25,8 @@ obj_window      = [6 4];
 
 BUTTON = 10;
 REWARD = 90;
-bhv_code(BUTTON,'Button',REWARD,'Reward');
+PUFF   = 91;
+bhv_code(BUTTON,'Button',REWARD,'Reward',PUFF,'Puff');
 
 % ---------- Scene 0: central white circle (TaskObject #1) ----------
 fix_start = SingleTarget(tracker);
@@ -53,8 +54,8 @@ hold1_st.Target    = 3;
 hold1_st.Threshold = obj_window;
 
 hold1 = FreeThenHold(hold1_st);
-hold1.WaitTime = fix_wait;
-hold1.HoldTime = fix_hold;
+hold1.WaitTime = fix_wait;     % up to 5000 ms to (re)acquire and hold
+hold1.HoldTime = fix_hold;     % 200 ms
 
 scene_hold1 = create_scene(hold1, 3);
 
@@ -68,6 +69,14 @@ hold2.WaitTime = fix_wait;
 hold2.HoldTime = fix_hold;
 
 scene_hold2 = create_scene(hold2, 5);
+
+% ---------- TTL for puff (TTL1) ----------
+ttl_puff = TTLOutput(null_);
+ttl_puff.Trigger = true;
+ttl_puff.Port    = 1;      % TTL1
+
+tc_puff = TimeCounter(ttl_puff);
+tc_puff.Duration = 50;     % default, overridden per trial
 
 % ---------- Run trial ----------
 error_type   = 0;
@@ -114,8 +123,10 @@ else
     end
 end
 
+% Determine which side and what was chosen
+chose_side = double(chose_img1)*1 + double(chose_img2)*2;  % 1 or 2 or 0
+
 % Was the higher option chosen on this trial?
-% higher_side: 1=image1, 2=image2, 0=equal
 if TrialRecord.User.higher_side ~= 0
     if (TrialRecord.User.higher_side == 1 && chose_img1) || ...
        (TrialRecord.User.higher_side == 2 && chose_img2)
@@ -124,25 +135,61 @@ if TrialRecord.User.higher_side ~= 0
         higher_chosen = 0;
     end
 else
-    % equal amounts: treat as NaN / 0; you can filter later
     higher_chosen = 0;
 end
 
-% Reward / error
+% ---------- Outcome ----------
 if error_type == 0
-    run_scene(sndscene_cor1);
 
-    % Pulsed reward: pulses depend on chosen object (1,2,3)
-    reward        = 50;       % ms per pulse (tune)
-    base_pause_ms = 200;      % gap between pulses
-
-    for k = 1:num_rew
-        idle(150);  % small delay before each pulse
-        goodmonkey(reward,'numreward',1,'eventmarker',REWARD);
-        if k < num_rew
-            idle(base_pause_ms);
-        end
+    % Check if chosen image is water or other (Zero/puff)
+    if chose_side == 1
+        chosen_type = TrialRecord.User.img1_type;   % 1=water,0=other
+    elseif chose_side == 2
+        chosen_type = TrialRecord.User.img2_type;
+    else
+        chosen_type = -1;
     end
+
+    if chosen_type == 1
+        % WATER choice (always water3 -> 3 pulses)
+        run_scene(sndscene_cor1);
+
+        reward        = 50;       % ms per pulse (tune)
+        base_pause_ms = 200;      % gap between pulses
+
+        for k = 1:num_rew
+            idle(150);
+            goodmonkey(reward,'numreward',1,'eventmarker',REWARD);
+            if k < num_rew
+                idle(base_pause_ms);
+            end
+        end
+
+    elseif chosen_type == 0
+        % NON-REWARD choice (Zero or puff)
+        ocode = TrialRecord.User.other_code;   % 0,2,3
+
+        if ocode == 0
+            % Zero: no water, no puff
+            run_scene(sndscene_err1);
+        else
+            % puff2 / puff3: airpuff TTL
+            if     ocode == 2
+                puff_duration = 250;   % medium
+            else
+                puff_duration = 400;   % strong
+            end
+
+            eventmarker(PUFF);
+            tc_puff.Duration = puff_duration;
+            scene_puff_ttl   = create_scene(tc_puff);
+            run_scene(scene_puff_ttl);
+        end
+    else
+        % should not happen; treat as error
+        run_scene(sndscene_err1);
+    end
+
 else
     run_scene(sndscene_err1);
 end
@@ -154,12 +201,15 @@ trialerror(error_type);
 % ---------- Save variables to bhv ----------
 bhv_variable('pos1',         TrialRecord.User.pos1);
 bhv_variable('pos2',         TrialRecord.User.pos2);
-bhv_variable('img_idx1',     TrialRecord.User.img_idx1);
-bhv_variable('img_idx2',     TrialRecord.User.img_idx2);
+
 bhv_variable('img1_pulses',  TrialRecord.User.img1_pulses);
 bhv_variable('img2_pulses',  TrialRecord.User.img2_pulses);
-bhv_variable('higher_side',  TrialRecord.User.higher_side);      % 1=image1, 2=image2, 0=equal
-bhv_variable('chose_side',   double(chose_img1)*1 + double(chose_img2)*2); % 1 or 2
-bhv_variable('higher_chosen', higher_chosen);                    % 1 if chose higher
+bhv_variable('img1_type',    TrialRecord.User.img1_type);     % 1=water,0=other
+bhv_variable('img2_type',    TrialRecord.User.img2_type);
+bhv_variable('other_code',   TrialRecord.User.other_code);    % 0,2,3
+
+bhv_variable('higher_side',  TrialRecord.User.higher_side);   % 1=image1, 2=image2, 0=equal
+bhv_variable('chose_side',   chose_side);                     % 1 or 2
+bhv_variable('higher_chosen', higher_chosen);                 % 1 if chose higher
 bhv_variable('touch_rt',     rt_touch);
 bhv_variable('num_pulses',   num_rew);
