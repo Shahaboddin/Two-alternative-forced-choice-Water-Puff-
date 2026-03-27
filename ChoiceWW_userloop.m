@@ -17,7 +17,7 @@ if TrialRecord.CurrentTrialNumber >= max_trials
     return;
 end
 
-% 4) Define positions (same as your single-object task)
+% 4) Define positions
 cx = 0;   cy = -12;   % center
 rx = 7;   ry = -14;   % right
 lx = -7;  ly = -14;   % left
@@ -32,19 +32,35 @@ pos_idx = randperm(3,2);
 pos1    = all_button_locs(pos_idx(1),:);
 pos2    = all_button_locs(pos_idx(2),:);
 
-% 6) Reward images and levels (same mapping as before)
-image_names   = {'water1.png','water2.png','water3.png'};
-reward_pulses = [1 2 3];
+% 6) Reward images and levels
 
-% pick 2 distinct images out of 3
-img_idx_pair  = randperm(3,2);
-img_idx1      = img_idx_pair(1);
-img_idx2      = img_idx_pair(2);
+% ===== FULL SET (for later) =====
+% image_names   = {'Zero.png','water1.png','water2.png','water3.png'};
+% reward_pulses = [0          1           2           3];
 
-img1_name     = image_names{img_idx1};
-img2_name     = image_names{img_idx2};
-img1_pulses   = reward_pulses(img_idx1);
-img2_pulses   = reward_pulses(img_idx2);
+% ===== TRAINING PHASE: only Zero + water3 =====
+image_names   = {'Zero.png','water3.png'};   % currently used
+reward_pulses = [0         3];
+
+% pick indices within the current set
+idx_zero  = 1;   % Zero.png
+idx_high  = 2;   % water3.png
+
+img_idx1 = idx_zero;
+img_idx2 = idx_high;
+
+% randomize which logical slot is zero vs water3
+if rand < 0.5
+    % keep: pos1 = Zero, pos2 = water3
+else
+    % swap
+    tmp      = img_idx1; img_idx1 = img_idx2; img_idx2 = tmp;
+end
+
+img1_name   = image_names{img_idx1};
+img2_name   = image_names{img_idx2};
+img1_pulses = reward_pulses(img_idx1);
+img2_pulses = reward_pulses(img_idx2);
 
 % 7) Save for analysis
 TrialRecord.User.all_button_locs = all_button_locs;
