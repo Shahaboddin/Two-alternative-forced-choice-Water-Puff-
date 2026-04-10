@@ -13,10 +13,10 @@ sndscene_err1 = create_scene(snd_err1);
 
 % Editables
 editable('fix_window','fix_wait','fix_hold','reward','iti','max_trials_edit');
-fix_window      = 3;        % cue radius (circle)
+fix_window      = 3;
 fix_wait        = 5000;
 fix_hold        = 200;
-reward          = 50;       % ms per water pulse (small reward)
+reward          = 50;    % ms per pulse for ALL choices (tune here)
 iti             = 100;
 max_trials_edit = 800;
 
@@ -139,30 +139,38 @@ else
 end
 
 % ---------- Puff + water / error ----------
+% ---------- Puff + water / error ----------
 if error_type == 0
-    % Always play correct sound for a valid choice+hold
     run_scene(sndscene_cor1);
 
-    % 1) Small water reward for any chosen stimulus
-    % single small pulse (you can tune reward duration)
-    goodmonkey(reward,'numreward',1,'eventmarker',REWARD);
+    % Water: same for Zero, puff2, puff3
+    num_pulses = 3;   % e.g. 3 pulses for every valid choice
 
-    % 2) Puff outcome depending on chosen_value
-    % chosen_value: 0 = Zero (no puff), 1 = small puff, 2 = big puff
-    if chosen_value == 0
-        % Zero: no puff
-    else
-        if chosen_value == 1
-            puff_duration = 250;   % small puff (puff2)
-        else
-            puff_duration = 400;   % big puff (puff3)
+    for k = 1:num_pulses
+        idle(150);
+        goodmonkey(reward,'numreward',1,'eventmarker',REWARD);
+        if k < num_pulses
+            idle(200);  % gap between pulses
         end
+    end
 
+    % Puff outcome depending on chosen_value
+    % chosen_value: 0 = Zero, 1 = puff2, 2 = puff3
+    if chosen_value == 1
+        puff_duration = 250;   % small puff
+    elseif chosen_value == 2
+        puff_duration = 400;   % big puff
+    else
+        puff_duration = 0;     % Zero: no puff
+    end
+
+    if puff_duration > 0
         eventmarker(PUFF);
         tc_puff.Duration = puff_duration;
         scene_puff_ttl   = create_scene(tc_puff);
         run_scene(scene_puff_ttl);
     end
+
 else
     run_scene(sndscene_err1);
 end
