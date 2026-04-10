@@ -18,7 +18,7 @@ if TrialRecord.CurrentTrialNumber >= max_trials
 end
 
 % 4) Define positions
-cx = 0;   cy = -12;   % center
+cx = 0;   cy = -11;   % center
 rx = 7;   ry = -14;   % right
 lx = -7;  ly = -14;   % left
 
@@ -81,7 +81,7 @@ highlight_size = round(1.4 * normal_size);
 % #5 image2 big
 
 C = { ...
-    'crc(2,[1 1 1],1,0,-17)', ...  % #1 cue
+    'crc(2,[1 1 1],1,0,-19)', ...  % #1 cue
     sprintf('pic(%s,%.1f,%.1f,%d,%d)', img1_name, pos1(1), pos1(2), normal_size,    normal_size), ...    % #2
     sprintf('pic(%s,%.1f,%.1f,%d,%d)', img1_name, pos1(1), pos1(2), highlight_size, highlight_size), ... % #3
     sprintf('pic(%s,%.1f,%.1f,%d,%d)', img2_name, pos2(1), pos2(2), normal_size,    normal_size), ...    % #4
