@@ -41,22 +41,24 @@ w_idx        = randi(3);
 this_water   = water_names{w_idx};
 this_w_level = water_levels(w_idx);
 
-% 6) Puff images and levels (1=weak,2=medium,3=strong)
-puff_names   = {'puff1.png','puff2.png','puff3.png'};
-puff_levels  = [1 2 3];
+% 6) Puff images and levels (1=Zero,2=puff2,3=puff3)
+puff_names   = {'Zero.png','puff2.png','puff3.png'};
+puff_levels  = [1 2 3];              % keep for labels if you like
+puff_codes   = [0 2 3];              % 0=Zero (no outcome), 2=puff2, 3=puff3
 
 p_idx        = randi(3);
 this_puff    = puff_names{p_idx};
 this_p_level = puff_levels(p_idx);
+this_p_code  = puff_codes(p_idx);
 
 % 7) Save for analysis / timing
 TrialRecord.User.water_pos      = water_pos;
 TrialRecord.User.puff_pos       = puff_pos;
 TrialRecord.User.water_index    = w_idx;
 TrialRecord.User.puff_index     = p_idx;
-TrialRecord.User.water_level    = this_w_level;   % 1–3 pulses
-TrialRecord.User.puff_level     = this_p_level;   % 1–3 (we map to ms below)
-
+TrialRecord.User.water_level    = this_w_level;   % 1â€“3 pulses
+TrialRecord.User.puff_level     = this_p_level;   % 1â€“3 label
+TrialRecord.User.puff_code      = this_p_code;    % 0=Zero, 2=puff2, 3=puff3
 % 8) Build TaskObjects:
 normal_size    = 150;
 highlight_size = round(1.4 * normal_size);
