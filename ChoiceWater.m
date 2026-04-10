@@ -17,7 +17,7 @@ fix_window      = 3;        % cue radius (circle)
 fix_wait        = 5000;
 fix_hold        = 200;
 reward          = 50;       % ms per pulse (baseline)
-iti             = 50;
+iti             = 100;
 max_trials_edit = 800;
 
 % rectangular-ish window for the images (x_radius, y_radius)
@@ -136,7 +136,7 @@ if error_type == 0
     run_scene(sndscene_cor1);
 
     reward        = 50;       % ms per pulse
-    base_pause_ms = 200;
+    base_pause_ms = 250;
 
     % num_rew may be 0 (Zero), 1,2,3 (water images)
     for k = 1:num_rew
