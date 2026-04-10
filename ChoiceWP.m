@@ -145,30 +145,35 @@ if error_type == 0
         end
 
     elseif chose_puff
-        level = TrialRecord.User.puff_level;  % 1,2,3
-        if     level == 1
-            puff_duration = 100;
-        elseif level == 2
-            puff_duration = 250;
-        else
-            puff_duration = 400;
-        end
+        % Decide based on puff_code: 0 = Zero (no outcome), 2/3 = real puff
+        pcode = TrialRecord.User.puff_code;  % 0,2,3
 
-        eventmarker(PUFF);
-        tc_puff.Duration = puff_duration;
-        scene_puff_ttl   = create_scene(tc_puff);
-        run_scene(scene_puff_ttl);
+        if pcode == 0
+            % Zero.png: no water, no puff, optional error sound
+            run_scene(sndscene_err1);
+
+        else
+            % puff2 / puff3: airpuff
+            if     pcode == 2
+                puff_duration = 250;
+            else  % 3
+                puff_duration = 400;
+            end
+
+            eventmarker(PUFF);
+            tc_puff.Duration = puff_duration;
+            scene_puff_ttl   = create_scene(tc_puff);
+            run_scene(scene_puff_ttl);
+        end
     end
 else
     run_scene(sndscene_err1);
 end
-
-idle(iti);
-
 % ----------------- Log variables -----------------
 trialerror(error_type);
 bhv_variable('water_pos',   TrialRecord.User.water_pos);
 bhv_variable('puff_pos',    TrialRecord.User.puff_pos);
 bhv_variable('water_level', TrialRecord.User.water_level);
 bhv_variable('puff_level',  TrialRecord.User.puff_level);
+bhv_variable('puff_code',   TrialRecord.User.puff_code);   % 0=Zero,2=puff2,3=puff3
 bhv_variable('touch_rt',    rt_touch);
