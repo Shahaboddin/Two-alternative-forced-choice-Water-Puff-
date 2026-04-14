@@ -11,14 +11,13 @@ snd_err1.List = 'load_waveform({''sin'', .2, 200})';
 sndscene_cor1 = create_scene(snd_cor1);
 sndscene_err1 = create_scene(snd_err1);
 
-% Editables
-editable('fix_window','fix_wait','fix_hold','reward','iti','max_trials_edit');
-fix_window      = 3;
+% Editables (no max_trials here; handled in userloop)
+editable('fix_window','fix_wait','fix_hold','reward','iti');
+fix_window      = 3;        % cue radius (circle)
 fix_wait        = 5000;
 fix_hold        = 200;
-reward          = 50;    % ms per pulse for ALL choices (tune here)
+reward          = 50;       % ms per water pulse (for all choices)
 iti             = 100;
-max_trials_edit = 800;
 
 % rectangular-ish window for the images (x_radius, y_radius)
 obj_window      = [6 4];
@@ -70,20 +69,24 @@ hold2.HoldTime = fix_hold;
 
 scene_hold2 = create_scene(hold2, 5);
 
-% ---------- TTL for puff (TTL1) ----------
+% ---------- TTL for puffs: TTL #1 & #2 ----------
+% In the ML I/O menu:
+%   TTL #1 should be mapped to P0.1 (first puff solenoid)
+%   TTL #2 should be mapped to P0.3 (second puff solenoid)
+
 ttl_puff = TTLOutput(null_);
 ttl_puff.Trigger = true;
-ttl_puff.Port    = 1;      % TTL1
+ttl_puff.Port    = [1 2];    % TTL #1 and TTL #2
 
 tc_puff = TimeCounter(ttl_puff);
-tc_puff.Duration = 50;     % default, overridden per trial
+tc_puff.Duration = [50 50];  % defaults, overridden before each puff
 
 % ---------- Run trial ----------
 error_type    = 0;
 rt_touch      = NaN;
 chose_img1    = false;
 chose_img2    = false;
-chosen_value  = NaN;  % 0,1,2 (Zero, small, big)
+chosen_value  = NaN;  % 0=Zero, 1=puff2, 2=puff3
 higher_chosen = 0;    % 1 if higher-value (stronger puff) chosen
 
 idle(500);
@@ -139,36 +142,58 @@ else
 end
 
 % ---------- Puff + water / error ----------
-% ---------- Puff + water / error ----------
 if error_type == 0
     run_scene(sndscene_cor1);
 
-    % Water: same for Zero, puff2, puff3
-    num_pulses = 3;   % e.g. 3 pulses for every valid choice
+    % chosen_value: 0 = Zero, 1 = puff2, 2 = puff3
+
+    % 1) Water reward: different # pulses for Zero / puff2 / puff3
+    if chosen_value == 0
+        num_pulses = 3;   % Zero: 3 water rewards
+    elseif chosen_value == 1
+        num_pulses = 2;   % puff2: 2 water rewards
+    else
+        num_pulses = 1;   % puff3: 1 water reward
+    end
 
     for k = 1:num_pulses
         idle(150);
-        goodmonkey(reward,'numreward',1,'eventmarker',REWARD);
+        goodmonkey(reward,'numreward',1,'eventmarker',REWARD);  % water on default juiceline
         if k < num_pulses
-            idle(200);  % gap between pulses
+            idle(200);  % gap between water pulses
         end
     end
 
-    % Puff outcome depending on chosen_value
-    % chosen_value: 0 = Zero, 1 = puff2, 2 = puff3
+    % 2) Puff outcome
     if chosen_value == 1
-        puff_duration = 250;   % small puff
-    elseif chosen_value == 2
-        puff_duration = 400;   % big puff
-    else
-        puff_duration = 0;     % Zero: no puff
-    end
-
-    if puff_duration > 0
+        % Puff2: single small puff on TTL #1 (P0.1)
+        puff_duration = 250;                    % small puff
         eventmarker(PUFF);
-        tc_puff.Duration = puff_duration;
-        scene_puff_ttl   = create_scene(tc_puff);
-        run_scene(scene_puff_ttl);
+        tc_puff.Duration = [puff_duration 0];   % only TTL #1 active
+        scene_puff = create_scene(tc_puff);
+        run_scene(scene_puff);
+
+    elseif chosen_value == 2
+        % Puff3: two small puffs, first on TTL #1 (P0.1), second on TTL #2 (P0.3), 100 ms apart
+        puff_duration = 250;
+
+        % first puff on TTL #1
+        eventmarker(PUFF);
+        tc_puff.Duration = [puff_duration 0];   % [TTL1 TTL2]
+        scene_puff = create_scene(tc_puff);
+        run_scene(scene_puff);
+
+        % 100 ms gap
+        idle(100);
+
+        % second puff on TTL #2
+        eventmarker(PUFF);
+        tc_puff.Duration = [0 puff_duration];   % now only TTL2 active
+        scene_puff = create_scene(tc_puff);
+        run_scene(scene_puff);
+
+    else
+        % Zero: no puff
     end
 
 else
